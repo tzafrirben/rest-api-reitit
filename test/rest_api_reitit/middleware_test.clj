@@ -95,4 +95,44 @@
                              :UserName  "user-name"
                              :FirstName "fname"
                              :LastName  "lname"}
-              :query-params {:LastName "query"}})))))
+              :query-params {:LastName "query"}}))))
+  (testing "Testing middleware `letter-case-request` function async execution"
+    (let [handler (middleware/letter-case-request (fn [request respond _]
+                                                    (respond request))
+                                                  {:from :camelCase :to :kebab-case})
+          request {:body-params {:userId    1234
+                                 :userName  "user-name"
+                                 :firstName "fname"
+                                 :lastName  "lname"}}
+          respond (promise)]
+      (handler request respond (promise))
+      (is (= (:body-params @respond)
+             {:user-id 1234 :user-name "user-name" :first-name "fname" :last-name "lname"})))))
+
+(deftest letter-case-response-test
+  (testing "Testing middleware `letter-case-response` function"
+    (let [handler  (middleware/letter-case-response identity {:to :camelCase})
+          response {:body {:new-user {:user-id    1234
+                                      :user-name  "user-name"
+                                      :first-name "fname"
+                                      :last-name  "lname"}}}
+
+          new-body (:body (handler response))]
+      (is (= new-body {:newUser {:userId    1234
+                                 :userName  "user-name"
+                                 :firstName "fname"
+                                 :lastName  "lname"}}))))
+  (testing "Testing middleware `letter-case-response` function async execution"
+    (let [handler  (middleware/letter-case-response (fn [request respond _]
+                                                      (respond request))
+                                                    {:to :camelCase})
+          response {:body {:new-user {:user-id    1234
+                                      :user-name  "user-name"
+                                      :first-name "fname"
+                                      :last-name  "lname"}}}
+          respond  (promise)]
+      (handler response respond (promise))
+      (is (= (:body @respond) {:newUser {:userId    1234
+                                         :userName  "user-name"
+                                         :firstName "fname"
+                                         :lastName  "lname"}})))))

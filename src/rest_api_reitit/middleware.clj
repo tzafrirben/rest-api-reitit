@@ -63,19 +63,33 @@
   This middleware must be called AFTER request params were parsed"
   {:arglists '([handler] [handler options])}
   [handler & [{:as options}]]
-  (fn [{:keys [body-params query-params] :as request}]
-    (let [from-letter-case (or (:from options) (:from default-options))
-          to-letter-case   (or (:to options) (:to default-options))]
-      (handler
-       (cond-> request
-         (coll? body-params)  (assoc :body-params
-                                     (transform-keys-letter-case
-                                      (filter-letter-case-keys body-params from-letter-case)
-                                      to-letter-case))
-         (coll? query-params) (assoc :query-params
-                                     (transform-keys-letter-case
-                                      (filter-letter-case-keys query-params from-letter-case)
-                                      to-letter-case)))))))
+  (fn ([{:keys [body-params query-params] :as request}]
+       (let [from-letter-case (or (:from options) (:from default-options))
+             to-letter-case   (or (:to options) (:to default-options))]
+         (handler
+          (cond-> request
+            (coll? body-params)  (assoc :body-params
+                                        (transform-keys-letter-case
+                                         (filter-letter-case-keys body-params from-letter-case)
+                                         to-letter-case))
+            (coll? query-params) (assoc :query-params
+                                        (transform-keys-letter-case
+                                         (filter-letter-case-keys query-params from-letter-case)
+                                         to-letter-case))))))
+    ([{:keys [body-params query-params] :as request} respond raise]
+     (let [from-letter-case (or (:from options) (:from default-options))
+           to-letter-case   (or (:to options) (:to default-options))]
+       (handler
+        (cond-> request
+          (coll? body-params)  (assoc :body-params
+                                      (transform-keys-letter-case
+                                       (filter-letter-case-keys body-params from-letter-case)
+                                       to-letter-case))
+          (coll? query-params) (assoc :query-params
+                                      (transform-keys-letter-case
+                                       (filter-letter-case-keys query-params from-letter-case)
+                                       to-letter-case)))
+        respond raise)))))
 
 (defn letter-case-response
   "Middleware for recursively transforms all response body keys letter case

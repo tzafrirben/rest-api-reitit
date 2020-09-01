@@ -3,14 +3,14 @@
             [camel-snake-kebab.core :as csk]
             [rest-api-reitit.middleware :as middleware]))
 
-(deftest coerce-letter-case-test
-  (testing "Testing middleware `coerce-letter-case` function"
-    (is (= (middleware/coerce-letter-case csk/->camelCaseKeyword "camel-case") :camelCase))
-    (is (= (middleware/coerce-letter-case csk/->snake_case "snake-case") "snake_case"))
-    (is (= (middleware/coerce-letter-case csk/->camelCaseKeyword true) :true))
-    (is (= (middleware/coerce-letter-case csk/->kebab-case-keyword 200) :200))
-    (is (nil? (middleware/coerce-letter-case csk/->camelCaseKeyword nil)))
-    (is (nil? (middleware/coerce-letter-case csk/->camelCaseKeyword {})))))
+(deftest convert-letter-case-test
+  (testing "Testing middleware `convert-letter-case` function"
+    (is (= (middleware/convert-letter-case csk/->camelCaseKeyword "camel-case") :camelCase))
+    (is (= (middleware/convert-letter-case csk/->snake_case "snake-case") "snake_case"))
+    (is (= (middleware/convert-letter-case csk/->camelCaseKeyword true) :true))
+    (is (= (middleware/convert-letter-case csk/->kebab-case-keyword 200) :200))
+    (is (nil? (middleware/convert-letter-case csk/->camelCaseKeyword nil)))
+    (is (nil? (middleware/convert-letter-case csk/->camelCaseKeyword {})))))
 
 (deftest letter-case-keyword-test
   (testing "Testing middleware `Letter-case-keyword` function"
@@ -34,17 +34,17 @@
     (is (= (middleware/letter-case-keyword :camel-snake-case  :Camel_Snake_Case) :Camel_Snake_Case))
     (is (= (middleware/letter-case-keyword "test" :test) :test))))
 
-(deftest filter-letter-case-keys-test
-  (testing "Testing middleware `filter-letter-case-keys` function"
-    (is (= (middleware/filter-letter-case-keys {:userName "user" :first-name "name"} :camelCase)
+(deftest filter-keys-letter-case-test
+  (testing "Testing middleware `filter-keys-letter-case` function"
+    (is (= (middleware/filter-keys-letter-case {:userName "user" :first-name "name"} :camelCase)
            {:userName "user"}))
-    (is (= (middleware/filter-letter-case-keys {:userName "user" :first-name "name"} :kebab-case)
+    (is (= (middleware/filter-keys-letter-case {:userName "user" :first-name "name"} :kebab-case)
            {:first-name "name"}))
-    (is (= (middleware/filter-letter-case-keys {:userName "user" :first-name "name"} :snake_case)
+    (is (= (middleware/filter-keys-letter-case {:userName "user" :first-name "name"} :snake_case)
            {}))
-    (is (= (middleware/filter-letter-case-keys {:UserName "user" :first_name "name"} :PascalCase)
+    (is (= (middleware/filter-keys-letter-case {:UserName "user" :first_name "name"} :PascalCase)
            {:UserName "user"}))
-    (is (= (middleware/filter-letter-case-keys {:UserName "user" :first_name "name"} :snake_case)
+    (is (= (middleware/filter-keys-letter-case {:UserName "user" :first_name "name"} :snake_case)
            {:first_name "name"}))))
 
 (deftest transform-keys-letter-case-test
@@ -55,6 +55,27 @@
            {:user_id 1234 :user_name "name"}))
     (is (= (middleware/transform-keys-letter-case {"userId" 1234 "userName" "name"} :test)
            {:userId 1234 :userName "name"}))))
+
+(deftest transform-request-params-test
+  (testing "Testing middleware `transform-request-params` function"
+    (is (= (middleware/transform-request-params {:body-params {:userId    1234
+                                                               :userName  "user-name"
+                                                               :firstName "fname"
+                                                               :lastName  "lname"}}
+                                                {:from :camelCase :to :kebab-case})
+           {:body-params {:user-id    1234
+                          :user-name  "user-name"
+                          :first-name "fname"
+                          :last-name  "lname"}}))
+    (is (= (middleware/transform-request-params {:body {:userId    1234
+                                                        :userName  "user-name"
+                                                        :firstName "fname"
+                                                        :lastName  "lname"}}
+                                                {:from :camelCase :to :PascalCase})
+           {:body {:UserId    1234
+                   :UserName  "user-name"
+                   :FirstName "fname"
+                   :LastName  "lname"}}))))
 
 (deftest letter-case-request-test
   (testing "Testing middleware `letter-case-request` function"

@@ -7,8 +7,8 @@
   {:from :camelCase
    :to   :kebab-case})
 
-(defn coerce-letter-case
-  "(safely) coerce map key using coerce function"
+(defn convert-letter-case
+  "(safely) convert key using coerce function"
   [coerce-fn k]
   (cond
     (nil? k)     k
@@ -21,16 +21,16 @@
 (defn letter-case-keyword
   [k letter-case]
   (case letter-case
-    :PascalCase           (coerce-letter-case csk/->PascalCaseKeyword k)
-    :camelCase            (coerce-letter-case csk/->camelCaseKeyword k)
-    :SCREAMING_SNAKE_CASE (coerce-letter-case csk/->SCREAMING_SNAKE_CASE_KEYWORD k)
-    :snake_case           (coerce-letter-case csk/->snake_case_keyword k)
-    :kebab-case           (coerce-letter-case csk/->kebab-case-keyword k)
-    :Camel_Snake_Case     (coerce-letter-case csk/->Camel_Snake_Case_Keyword k)
+    :PascalCase           (convert-letter-case csk/->PascalCaseKeyword k)
+    :camelCase            (convert-letter-case csk/->camelCaseKeyword k)
+    :SCREAMING_SNAKE_CASE (convert-letter-case csk/->SCREAMING_SNAKE_CASE_KEYWORD k)
+    :snake_case           (convert-letter-case csk/->snake_case_keyword k)
+    :kebab-case           (convert-letter-case csk/->kebab-case-keyword k)
+    :Camel_Snake_Case     (convert-letter-case csk/->Camel_Snake_Case_Keyword k)
 
     (keyword k)))
 
-(defn filter-letter-case-keys
+(defn filter-keys-letter-case
   "Recursively filter `letter-case` map keys"
   [m letter-case]
   (let [f (fn [m [k v]]
@@ -43,6 +43,23 @@
   [m letter-case]
   (let [f (fn [[k v]] [(letter-case-keyword k letter-case) v])]
     (postwalk (fn [x] (if (map? x) (into {} (map f x)) x)) m)))
+
+(defn transform-request-params
+  "transform request body and query parameters letter case.To support both
+  ring `params-request` and `wrap-json-body` and reitit coercion middlewares,
+  transform the request body\\params and body-params\\query-params"
+  [request options]
+  (let [from-letter-case (or (:from options) (:from default-options))
+        to-letter-case   (or (:to options) (:to default-options))]
+    (reduce (fn [req k]
+              (if (coll? (k req))
+                (update req k
+                        #(transform-keys-letter-case
+                          (filter-keys-letter-case % from-letter-case)
+                          to-letter-case))
+                req))
+            request
+            [:body-params :query-params :body :params])))
 
 (defn letter-case-request
   "Middleware to recursively transforms all request body and query params keys.
@@ -63,33 +80,13 @@
   This middleware must be called AFTER request params were parsed"
   {:arglists '([handler] [handler options])}
   [handler & [{:as options}]]
-  (fn ([{:keys [body-params query-params] :as request}]
-       (let [from-letter-case (or (:from options) (:from default-options))
-             to-letter-case   (or (:to options) (:to default-options))]
-         (handler
-          (cond-> request
-            (coll? body-params)  (assoc :body-params
-                                        (transform-keys-letter-case
-                                         (filter-letter-case-keys body-params from-letter-case)
-                                         to-letter-case))
-            (coll? query-params) (assoc :query-params
-                                        (transform-keys-letter-case
-                                         (filter-letter-case-keys query-params from-letter-case)
-                                         to-letter-case))))))
-    ([{:keys [body-params query-params] :as request} respond raise]
-     (let [from-letter-case (or (:from options) (:from default-options))
-           to-letter-case   (or (:to options) (:to default-options))]
-       (handler
-        (cond-> request
-          (coll? body-params)  (assoc :body-params
-                                      (transform-keys-letter-case
-                                       (filter-letter-case-keys body-params from-letter-case)
-                                       to-letter-case))
-          (coll? query-params) (assoc :query-params
-                                      (transform-keys-letter-case
-                                       (filter-letter-case-keys query-params from-letter-case)
-                                       to-letter-case)))
-        respond raise)))))
+  (fn ([request]
+       (handler (transform-request-params request options)))
+    ([request respond raise]
+     (handler
+      (transform-request-params request options)
+      respond
+      raise))))
 
 (defn letter-case-response
   "Middleware for recursively transforms all response body keys letter case
@@ -114,16 +111,22 @@
       ([request]
        (let [response (handler request)]
          (if (coll? (:body response))
-           (update response :body #(transform-keys-letter-case
-                                    % to-letter-case))
+           (update response
+                   :body
+                   #(transform-keys-letter-case
+                     % to-letter-case))
            response)))
       ([request respond raise]
-       (handler request
-                (fn [response]
-                  (respond (if (coll? (:body response))
-                             (update response :body #(transform-keys-letter-case
-                                                      % to-letter-case))
-                             response))) raise)))))
+       (handler
+        request
+        (fn [response]
+          (respond (if (coll? (:body response))
+                     (update response
+                             :body
+                             #(transform-keys-letter-case
+                               % to-letter-case))
+                     response)))
+        raise)))))
 
 (defn letter-case-swagger-body
   "Transforms swagger.json response body params values to letter case"
@@ -136,7 +139,6 @@
               :name     (if (keyword? v)
                           [k (letter-case-keyword v letter-case)]
                           [k v])
-              ;;; default:
               [k v]))]
     (postwalk (fn [x] (if (map? x) (into {} (map f x)) x)) body)))
 
@@ -161,12 +163,15 @@
     (fn
       ([request]
        (let [response (handler request)]
-         (update response :body
+         (update response
+                 :body
                  #(letter-case-swagger-body % to-letter-case))))
       ([request respond raise]
-       (handler request
-                (fn [response]
-                  (respond
-                   (update response :body
-                           #(letter-case-swagger-body % to-letter-case))))
-                raise)))))
+       (handler
+        request
+        (fn [response]
+          (respond
+           (update response
+                   :body
+                   #(letter-case-swagger-body % to-letter-case))))
+        raise)))))

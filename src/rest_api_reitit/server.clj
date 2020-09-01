@@ -35,8 +35,6 @@
      ["/v1"
       ["/users"
        {:swagger {:tags ["users"]}
-          ;;; http GET :3000/v1/users
-          ;;; http GET :3000/v1/users lastName==second
         :get     {:summary    "List all users (or optionally filter using last name)"
                   :parameters {:query
                                [:map [:last-name {:optional true} string?]]}
@@ -57,36 +55,33 @@
                                                                             (:last-name %)
                                                                             last-name)))}}
                                   {:status 200 :body {:users (vals @users)}}))}
-
-        ;;; http POST :3000/v1/users userName=user-3 firstName=three lastName=third
-        :post {:summary    "Add new user"
-               :parameters {:body [:map
-                                   [:user-name string?]
-                                   [:first-name string?]
-                                   [:last-name string?]]}
-               :responses  {200 {:body [:map
-                                        [:user
-                                         [:map
-                                          [:user-id pos-int?]
-                                          [:user-name string?]
-                                          [:first-name string?]
-                                          [:last-name string?]]]]}
-                            400 {:body [:map [:error string?]]}}
-               :handler    (fn [{{{:keys [user-name] :as user} :body} :parameters}]
-                             (let [user-exists? (->> (vals @users)
-                                                     (filter #(= (:user-name %) user-name))
-                                                     (seq)
-                                                     (some?))]
-                               (if user-exists?
-                                 {:status 400 :body {:error "User already exists"}}
-                                 (let [user-id  (swap! next-user-id inc)
-                                       new-user (assoc user :user-id user-id)]
-                                   (swap! users assoc user-id new-user)
-                                   {:status 200 :body {:user new-user}}))))}}]
+        :post    {:summary    "Add new user"
+                  :parameters {:body [:map
+                                      [:user-name string?]
+                                      [:first-name string?]
+                                      [:last-name string?]]}
+                  :responses  {200 {:body [:map
+                                           [:user
+                                            [:map
+                                             [:user-id pos-int?]
+                                             [:user-name string?]
+                                             [:first-name string?]
+                                             [:last-name string?]]]]}
+                               400 {:body [:map [:error string?]]}}
+                  :handler    (fn [{{{:keys [user-name] :as user} :body} :parameters}]
+                                (let [user-exists? (->> (vals @users)
+                                                        (filter #(= (:user-name %) user-name))
+                                                        (seq)
+                                                        (some?))]
+                                  (if user-exists?
+                                    {:status 400 :body {:error "User already exists"}}
+                                    (let [user-id  (swap! next-user-id inc)
+                                          new-user (assoc user :user-id user-id)]
+                                      (swap! users assoc user-id new-user)
+                                      {:status 200 :body {:user new-user}}))))}}]
 
       ["/users/{user-id}"
        {:swagger {:tags ["users"]}
-        ;;; http GET :3000/v1/users/2
         :get     {:summary    "Retrieve a user"
                   :parameters {:path [:map
                                       [:user-id pos-int?]]}
@@ -102,48 +97,44 @@
                                 (if-let [user (get @users user-id)]
                                   {:status 200 :body {:user user}}
                                   {:status 400 :body {:error "User does not exists"}}))}
-
-        ;;; http POST :3000/v1/users/2 userName=user-5 firstName=five lastName=fifth
-        :post {:summary    "Update a user"
-               :parameters {:path [:map
-                                   [:user-id pos-int?]]
-                            :body [:map
-                                   [:user-name string?]
-                                   [:first-name string?]
-                                   [:last-name string?]]}
-               :responses  {200 {:body [:map
-                                        [:user
-                                         [:map
-                                          [:user-id pos-int?]
-                                          [:user-name string?]
-                                          [:first-name string?]
-                                          [:last-name string?]]]]}
-                            400 {:body [:map [:error string?]]}}
-               :handler    (fn [{{:keys [body] {:keys [user-id]} :path} :parameters}]
-                             (if-let [user (get @users user-id)]
-                               (let [updated-user (merge user body)]
-                                 (swap! users assoc user-id updated-user)
-                                 {:status 200 :body {:user updated-user}})
-                               {:status 400 :body {:error "User does not exists"}}))}
-
-        ;;; http DELETE :3000/v1/users/2
-        :delete {:summary    "Delete a user"
-                 :parameters {:path [:map
-                                     [:user-id pos-int?]]}
-                 :responses  {200 {:body [:map
-                                          [:user
-                                           [:map
-                                            [:user-id pos-int?]
-                                            [:user-name string?]
-                                            [:first-name string?]
-                                            [:last-name string?]]]]}
-                              400 {:body [:map [:error string?]]}}
-                 :handler    (fn [{{{:keys [user-id]} :path} :parameters}]
-                               (if-let [user (get @users user-id)]
-                                 (do
-                                   (swap! users dissoc user-id)
-                                   {:status 200 :body {:user user}})
-                                 {:status 400 :body {:error "User does not exists"}}))}}]]]
+        :post    {:summary    "Update a user"
+                  :parameters {:path [:map
+                                      [:user-id pos-int?]]
+                               :body [:map
+                                      [:user-name string?]
+                                      [:first-name string?]
+                                      [:last-name string?]]}
+                  :responses  {200 {:body [:map
+                                           [:user
+                                            [:map
+                                             [:user-id pos-int?]
+                                             [:user-name string?]
+                                             [:first-name string?]
+                                             [:last-name string?]]]]}
+                               400 {:body [:map [:error string?]]}}
+                  :handler    (fn [{{:keys [body] {:keys [user-id]} :path} :parameters}]
+                                (if-let [user (get @users user-id)]
+                                  (let [updated-user (merge user body)]
+                                    (swap! users assoc user-id updated-user)
+                                    {:status 200 :body {:user updated-user}})
+                                  {:status 400 :body {:error "User does not exists"}}))}
+        :delete  {:summary    "Delete a user"
+                  :parameters {:path [:map
+                                      [:user-id pos-int?]]}
+                  :responses  {200 {:body [:map
+                                           [:user
+                                            [:map
+                                             [:user-id pos-int?]
+                                             [:user-name string?]
+                                             [:first-name string?]
+                                             [:last-name string?]]]]}
+                               400 {:body [:map [:error string?]]}}
+                  :handler    (fn [{{{:keys [user-id]} :path} :parameters}]
+                                (if-let [user (get @users user-id)]
+                                  (do
+                                    (swap! users dissoc user-id)
+                                    {:status 200 :body {:user user}})
+                                  {:status 400 :body {:error "User does not exists"}}))}}]]]
 
     {:data {:coercion   (reitit.coercion.malli/create
                          {:error-keys       #{:value :humanized}

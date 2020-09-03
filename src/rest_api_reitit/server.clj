@@ -60,7 +60,7 @@
                                       [:user-name string?]
                                       [:first-name string?]
                                       [:last-name string?]]}
-                  :responses  {200 {:body [:map
+                  :responses  {201 {:body [:map
                                            [:user
                                             [:map
                                              [:user-id pos-int?]
@@ -78,7 +78,7 @@
                                     (let [user-id  (swap! next-user-id inc)
                                           new-user (assoc user :user-id user-id)]
                                       (swap! users assoc user-id new-user)
-                                      {:status 200 :body {:user new-user}}))))}}]
+                                      {:status 201 :body {:user new-user}}))))}}]
 
       ["/users/{user-id}"
        {:swagger {:tags ["users"]}
@@ -97,7 +97,7 @@
                                 (if-let [user (get @users user-id)]
                                   {:status 200 :body {:user user}}
                                   {:status 400 :body {:error "User does not exists"}}))}
-        :post    {:summary    "Update a user"
+        :put     {:summary    "Update a user"
                   :parameters {:path [:map
                                       [:user-id pos-int?]]
                                :body [:map

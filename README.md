@@ -2,7 +2,11 @@
 
 Example: simply naive Clojure REST API service using [reitit](https://github.com/metosin/reitit) to "manage" users. 
 
-The service API schema and back end Clojure code are using different case letter convention: The API schema is using `camelCase` (populare convention in many programign langugages such as [JavaScript](https://www.w3schools.com/js/js_conventions.asp)) and the backend Clojure code is using `kebab-case` (https://github.com/bbatsov/clojure-style-guide#lisp-case).
+The service API schema and back end Clojure code are using different case letter convention: The API schema is using `camelCase` (popular convention in many programing languages such as [JavaScript](https://www.w3schools.com/js/js_conventions.asp)) and the backend Clojure code is using `kebab-case` (https://github.com/bbatsov/clojure-style-guide#lisp-case).
+
+## Read more
+
+Read more about the this repository in this [medium post](https://medium.com/@tzafrirben/ring-clojure-middleware-to-standardized-your-api-d58a5b39079c)
 
 ## Try it out
 

@@ -31,7 +31,7 @@ http POST :3000/v1/users userName=new-user firstName=new lastName=user
 http DELETE :3000/v1/users/2
 
 # update specific user
-http POST :3000/v1/users/2 userName=user-2 firstName=new-fname lastName=new-lname
+http PUT :3000/v1/users/2 userName=user-2 firstName=new-fname lastName=new-lname
 
 # delete specific user
 http DELETE :3000/v1/users/2
